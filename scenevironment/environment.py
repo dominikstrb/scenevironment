@@ -1,9 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Any, Generic, TypeVar
 
-import gymnasium as gym
-from gymnasium import spaces
-
 from scenevironment.distribution import RNG, Distribution
 
 State = TypeVar("State")
@@ -27,30 +24,6 @@ class Env(ABC, Generic[State, Action, Observation, Reward]):
     @abstractmethod
     def reward(self, state: State, action: Action) -> Reward:
         pass
-
-    def gym_wrapper(self):
-        class GymEnv(gym.Env):
-            def __init__(self, env: Env):
-                super().__init__()
-                self.env = env
-                self.observation_space = spaces.Box(low=-float("inf"), high=float("inf"), shape=(1,), dtype=float)
-                self.action_space = spaces.Discrete(1)
-                self.state = None
-
-            def reset(self, *, seed=None, options=None):
-                self.state = None
-                obs = self.env.obs(self.state)
-                return obs, {}
-
-            def step(self, action):
-                next_state, obs, reward = self.env.step(self.state, action)
-                self.state = next_state
-                terminated = False
-                truncated = False
-                info = {}
-                return obs, reward, terminated, truncated, info
-
-        return GymEnv(self)
 
 
 class ProbabilisticEnv(
@@ -81,12 +54,12 @@ class ProbabilisticEnv(
 
         return next_state, self.obs(state), self.reward(state, action)
 
-    def obs(self, state) -> Observation:
+    def obs(self, state: State) -> Observation:
         rng_obs = self.split_rng()
 
         return self.observation_distribution(state).sample(rng_obs)
 
-    def split_rng(self) -> tuple[RNG, RNG]:
+    def split_rng(self) -> RNG:
         """
         Split the internal RNG into three independent RNGs.
 

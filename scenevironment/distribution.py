@@ -20,7 +20,7 @@ class Distribution(ABC, Generic[T, RNG]):
         pass
 
     @abstractmethod
-    def log_prob(self, value: T) -> float:
+    def log_prob(self, value: T) -> T:
         """
         Compute the log-probability of a given value.
 

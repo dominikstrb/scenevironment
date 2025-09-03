@@ -2,15 +2,15 @@ from typing import Any
 
 import jax.numpy as jnp
 from jax import random
-from jax.numpy import ndarray
 from jax.scipy.stats import multivariate_normal
+from jax.typing import ArrayLike
 
 from scenevironment.distribution import Distribution
 from scenevironment.environment import ProbabilisticEnv
 
 
-class JAXProbabilisticEnv(ProbabilisticEnv[ndarray, ndarray, ndarray, float, random.PRNGKey]):
-    def split_rng(self) -> random.PRNGKey:
+class JAXProbabilisticEnv(ProbabilisticEnv[ArrayLike, ArrayLike, ArrayLike, float, Any]):
+    def split_rng(self) -> Any:
         """
         Split the internal JAX PRNGKey into three independent keys.
 
@@ -21,12 +21,12 @@ class JAXProbabilisticEnv(ProbabilisticEnv[ndarray, ndarray, ndarray, float, ran
         return rng
 
 
-class GaussianDistribution(Distribution[ndarray, random.PRNGKey]):
-    def __init__(self, mean: ndarray, cov_chol: ndarray):
+class GaussianDistribution(Distribution[ArrayLike, Any]):
+    def __init__(self, mean: ArrayLike, cov_chol: ArrayLike):
         self.mean = mean
         self.cov_chol = cov_chol
 
-    def sample(self, rng: random.PRNGKey) -> ndarray:
+    def sample(self, rng: Any) -> ArrayLike:
         """
         Generate a sample from the Gaussian distribution.
 
@@ -34,16 +34,16 @@ class GaussianDistribution(Distribution[ndarray, random.PRNGKey]):
             rng (Any): The random number generator.
 
         Returns:
-            ndarray: A sample from the distribution.
+            ArrayLike: A sample from the distribution.
         """
         return self.mean + self.cov_chol @ random.normal(rng, shape=self.mean.shape)
 
-    def log_prob(self, value: ndarray) -> float:
+    def log_prob(self, value: ArrayLike) -> float:
         """
         Compute the log-probability of a given value.
 
         Args:
-            value (ndarray): The value to evaluate.
+            value (ArrayLike): The value to evaluate.
 
         Returns:
             float: The log-probability of the value.
@@ -76,7 +76,7 @@ class LQGEnv(JAXProbabilisticEnv):
             cov_chol=self.W,
         )
 
-    def reward(self, state: ndarray, action: ndarray) -> float:
+    def reward(self, state: ArrayLike, action: ArrayLike) -> float:
         return -(state.T @ self.Q @ state + action.T @ self.R @ action)  # Example: negative squared state as reward
 
 

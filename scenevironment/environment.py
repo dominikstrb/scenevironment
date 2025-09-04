@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import Any, Callable, Generic, TypeVar
 
+import gymasium as gym
+
 from scenevironment.distribution import RNG, Distribution
 
 State = TypeVar("State")
@@ -24,6 +26,9 @@ class Env(ABC, Generic[State, Action, Observation, Reward]):
     @abstractmethod
     def reward(self, state: State, action: Action) -> Reward:
         pass
+
+    def gym_wrapper(self) -> gym.Env:
+        raise NotImplementedError("Subclasses should implement gym_wrapper.")
 
 
 class ProbabilisticEnv(

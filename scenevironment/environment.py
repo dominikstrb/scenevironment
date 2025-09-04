@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, Callable, Generic, TypeVar
 
-import gymasium as gym
+import gymnasium as gym
 
 from scenevironment.distribution import RNG, Distribution
 

@@ -6,37 +6,14 @@
 [![Commit activity](https://img.shields.io/github/commit-activity/m/dominikstrb/scenevironment)](https://img.shields.io/github/commit-activity/m/dominikstrb/scenevironment)
 [![License](https://img.shields.io/github/license/dominikstrb/scenevironment)](https://img.shields.io/github/license/dominikstrb/scenevironment)
 
-Agent and environment interface for SCENE
+Agent-environment interface for SCENE, defining environments, agents, internal models.
 
 - **Github repository**: <https://github.com/dominikstrb/scenevironment/>
 - **Documentation** <https://dominikstrb.github.io/scenevironment/>
 
-## Getting started with your project
+## Contributing
 
-First, create a repository on GitHub with the same name as this project, and then run the following commands:
-
-```bash
-git init -b main
-git add .
-git commit -m "init commit"
-git remote add origin git@github.com:dominikstrb/scenevironment.git
-git push -u origin main
-```
-
-Finally, install the environment and the pre-commit hooks with
-
-```bash
-make install
-```
-
-You are now ready to start development on your project!
-The CI/CD pipeline will be triggered when you open a pull request, merge to main, or when you create a new release.
-
-To finalize the set-up for publishing to PyPI or Artifactory, see [here](https://fpgmaas.github.io/cookiecutter-poetry/features/publishing/#set-up-for-pypi).
-For activating the automatic documentation with MkDocs, see [here](https://fpgmaas.github.io/cookiecutter-poetry/features/mkdocs/#enabling-the-documentation-on-github).
-To enable the code coverage reports, see [here](https://fpgmaas.github.io/cookiecutter-poetry/features/codecov/).
-
-## Releasing a new version
+### Releasing a new version
 
 - Create an API Token on [PyPI](https://pypi.org/).
 - Add the API Token to your projects secrets with the name `PYPI_TOKEN` by visiting [this page](https://github.com/dominikstrb/scenevironment/settings/secrets/actions/new).

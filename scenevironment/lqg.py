@@ -1,5 +1,6 @@
-from typing import Any
+from typing import Any, Callable
 
+import jax
 import jax.numpy as jnp
 from jax import random
 from jax.scipy.stats import multivariate_normal
@@ -78,6 +79,88 @@ class LQGEnv(JAXProbabilisticEnv):
 
     def reward(self, state: ArrayLike, action: ArrayLike) -> float:
         return -(state.T @ self.Q @ state + action.T @ self.R @ action)  # Example: negative squared state as reward
+
+    def optimal_policy(self) -> Callable:
+        K = self.lqr_gains()
+
+        def _policy(state):
+            return -K @ state
+
+        return _policy
+
+    def bayesian_belief_update(self) -> Callable:
+        K = self.kalman_gains()
+
+        def _belief_update(state, action, obs):
+            return (self.A @ state + self.B @ action) + K @ (obs - self.C @ (self.A @ state + self.B @ action))
+
+        return _belief_update
+
+    def lqr_gains(self) -> ArrayLike:
+        """
+        Compute the optimal LQR policy
+
+        Returns:
+            Callable: A function that takes the current state and returns the optimal action.
+        """
+
+        X = dare_sda_solver(self.A, self.B, self.Q, self.R)
+        # Inverse term: (R + B^T @ X @ B)^-1
+        inv_term = jnp.linalg.inv(self.R + self.B.T @ X @ self.B)
+
+        # Gain term: B^T @ X @ A
+        gain_term = self.B.T @ X @ self.A
+
+        # Full gain matrix K
+        K = inv_term @ gain_term
+
+        return K
+
+    def kalman_gains(self) -> ArrayLike:
+        Sigma = dare_sda_solver(self.A.T, self.C.T, self.V @ self.V.T, self.W @ self.W.T)
+
+        # 2. Compute the Kalman gain K
+        # K = A * Sigma * H' * (H * Sigma * H' + V)^-1
+        K = (self.A @ Sigma @ self.C.T) @ jnp.linalg.inv(self.C @ Sigma @ self.C.T + self.W @ self.W.T)
+        return K
+
+
+def dare_sda_solver(A, B, Q, R, S=None, num_iterations=10):
+    """
+    Solves the discrete algebraic Riccati equation using the
+    Structured Doubling Algorithm (SDA).
+
+    The DARE is of the form A'XA - X - (A'XB + S)(R + B'XB)^-1(B'XA + S') + Q = 0.
+    This simplified version assumes S=0.
+    """
+    n, _ = A.shape
+    if S is None:
+        S = jnp.zeros((n, B.shape[1]))
+
+    # Define the update function for one iteration
+    def sda_iteration(carry, x):
+        Ak, Gk, Hk = carry
+
+        # Intermediate inverse terms
+        inv_I_plus_Gk_Hk = jnp.linalg.inv(jnp.eye(n) + Gk @ Hk)
+        inv_I_plus_Hk_Gk = jnp.linalg.inv(jnp.eye(n) + Hk @ Gk)
+
+        # SDA updates
+        Ak_next = Ak @ inv_I_plus_Gk_Hk @ Ak
+        Gk_next = Gk + Ak @ inv_I_plus_Gk_Hk @ Gk @ Ak.T
+        Hk_next = Hk + Ak.T @ inv_I_plus_Hk_Gk @ Hk @ Ak
+
+        return (Ak_next, Gk_next, Hk_next), None
+
+    # Initial matrices for SDA
+    A0 = A
+    G0 = B @ jax.scipy.linalg.solve(R, B.T)
+    H0 = Q
+
+    # JIT-compile the iterative loop
+    (Af, Gf, Hf), _ = jax.lax.scan(sda_iteration, (A0, G0, H0), jnp.arange(num_iterations))
+
+    return Hf
 
 
 class TrackingTaskEnv(LQGEnv):

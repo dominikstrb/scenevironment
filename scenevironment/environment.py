@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Generic, TypeVar
+from typing import Any, Callable, Generic, TypeVar
 
 from scenevironment.distribution import RNG, Distribution
 
@@ -32,19 +32,21 @@ class ProbabilisticEnv(
 ):
     def __init__(self, params: Any, rng: RNG):
         super().__init__(params)
+
         self.rng = rng  # Internal RNG instance
 
     def step(self, state: State, action: Action) -> tuple[State, Observation, Reward]:
         """
-        Perform a step in the environment based on probability distributions.
+        Perform a step in the environment by sampling from the state transition and observation distribution.
 
         Args:
             state (State): The current state.
-            action (Action): The action to take.
+            action (Action): The action taken by the agent.
 
         Returns:
             Tuple[State, Observation, Reward]: The next state, observation, and reward.
         """
+
         # Split the RNG for state, observation, and reward
         rng_state = self.split_rng()
 
@@ -61,10 +63,10 @@ class ProbabilisticEnv(
 
     def split_rng(self) -> RNG:
         """
-        Split the internal RNG into three independent RNGs.
+        Split the internal RNG into a two independent RNG (one returned and one stored in self.rng).
 
         Returns:
-            Tuple[RNG, RNG, RNG]: Three independent RNGs.
+            RNG: A new RNG state.
         """
         raise NotImplementedError("Subclasses must implement RNG splitting.")
 
@@ -72,4 +74,10 @@ class ProbabilisticEnv(
         raise NotImplementedError
 
     def observation_distribution(self, state: State) -> Distribution[Observation, RNG]:
+        raise NotImplementedError
+
+    def optimal_policy(self) -> Callable:
+        raise NotImplementedError
+
+    def bayesian_belief_update(self) -> Callable:
         raise NotImplementedError

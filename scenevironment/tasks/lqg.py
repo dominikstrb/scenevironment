@@ -47,7 +47,7 @@ class LQGEnv(JAXProbabilisticEnv):
         )
 
     def reward(self, state: ArrayLike, action: ArrayLike) -> float:
-        return -(state.T @ self.Q @ state + action.T @ self.R @ action)  # Example: negative squared state as reward
+        return -(state.T @ self.Q @ state + action.T @ self.R @ action)  # quadratic cost function
 
     def optimal_policy(self) -> Callable:
         K = self.lqr_gains()
@@ -155,10 +155,8 @@ def controllability_gramian(A, B, tol=1e-12, max_iter=20):
     A_k = A
     W_k = Q
 
-    # Use jax.lax.while_loop for an efficient, JIT-compilable loop
     def condition(state):
         A_k, _, i = state
-        # CORRECTED: Use jnp.linalg.norm instead of jax.scipy.linalg.norm
         return (i < max_iter) & (jnp.linalg.norm(A_k, ord="fro") > tol)
 
     def body(state):

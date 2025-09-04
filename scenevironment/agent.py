@@ -35,34 +35,3 @@ class RationalAgent(Agent[InternalState, Action], Generic[InternalState, Action]
 
     def update_state(self, internal_state, action, obs):
         return self.bayesian_belief_update(internal_state, action, obs)
-
-
-if __name__ == "__main__":
-    import jax.numpy as jnp
-    import matplotlib.pyplot as plt
-
-    from scenevironment.lqg import TrackingTaskEnv
-
-    # Example usage
-    env = TrackingTaskEnv(params={})
-    state = env.initial_state
-
-    agent = RationalAgent(internal_model=env)
-    internal_state = state  # Initial internal state
-
-    states = []
-    for _ in range(1000):
-        # compute the action based on current internal state
-        action = agent.behave(internal_state)
-
-        # take a step in the environment
-        state, observation, reward = env.step(state, action)
-        states.append(state)
-
-        # update the internal state based on agent's action and observation
-        internal_state = agent.update_state(internal_state, action, observation)
-
-    x = jnp.stack(states)
-    plt.plot(x[:, 0])
-    plt.plot(x[:, 1])
-    plt.show()

@@ -1,7 +1,7 @@
 import jax.numpy as jnp
 
 from scenevironment.agent import RationalAgent
-from scenevironment.lqg import TrackingTaskEnv
+from scenevironment.tasks.lqg import TrackingTaskEnv
 
 
 def test_lqg_env():

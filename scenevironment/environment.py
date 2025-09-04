@@ -51,7 +51,7 @@ class ProbabilisticEnv(
         rng_state = self.split_rng()
 
         # Sample from the distributions
-        state_dist = self.state_transition_distribution(state, action)
+        state_dist = self.transition_dist(state, action)
         next_state = state_dist.sample(rng_state)
 
         return next_state, self.obs(state), self.reward(state, action)
@@ -59,7 +59,7 @@ class ProbabilisticEnv(
     def obs(self, state: State) -> Observation:
         rng_obs = self.split_rng()
 
-        return self.observation_distribution(state).sample(rng_obs)
+        return self.observation_dist(state).sample(rng_obs)
 
     def split_rng(self) -> RNG:
         """
@@ -70,10 +70,10 @@ class ProbabilisticEnv(
         """
         raise NotImplementedError("Subclasses must implement RNG splitting.")
 
-    def state_transition_distribution(self, state: State, action: Action) -> Distribution[State, RNG]:
+    def transition_dist(self, state: State, action: Action) -> Distribution[State, RNG]:
         raise NotImplementedError
 
-    def observation_distribution(self, state: State) -> Distribution[Observation, RNG]:
+    def observation_dist(self, state: State) -> Distribution[Observation, RNG]:
         raise NotImplementedError
 
     def optimal_policy(self) -> Callable:

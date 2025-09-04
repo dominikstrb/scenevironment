@@ -34,13 +34,13 @@ class LQGEnv(JAXProbabilisticEnv):
         self.Q = Q  # State cost matrix
         self.R = R  # Control cost matrix
 
-    def state_transition_distribution(self, state, action):
+    def transition_dist(self, state, action):
         return GaussianDistribution(
             mean=self.A @ state + self.B @ action,
             cov_chol=self.V,
         )
 
-    def observation_distribution(self, state):
+    def observation_dist(self, state):
         return GaussianDistribution(
             mean=self.C @ state,
             cov_chol=self.W,
@@ -93,6 +93,9 @@ class LQGEnv(JAXProbabilisticEnv):
         K = (self.A @ Sigma @ self.C.T) @ jnp.linalg.inv(self.C @ Sigma @ self.C.T + self.W @ self.W.T)
         return K
 
+    def h1_score(self) -> ArrayLike:
+        return jnp.abs(jnp.linalg.eigvals(controllability_gramian(self.A, self.B)))
+
 
 def dare_sda_solver(A, B, Q, R, S=None, num_iterations=10):
     """
@@ -130,6 +133,48 @@ def dare_sda_solver(A, B, Q, R, S=None, num_iterations=10):
     (Af, Gf, Hf), _ = jax.lax.scan(sda_iteration, (A0, G0, H0), jnp.arange(num_iterations))
 
     return Hf
+
+
+def controllability_gramian(A, B, tol=1e-12, max_iter=20):
+    """
+    Computes the discrete-time controllability Gramian using the doubling algorithm.
+
+    Args:
+        A: The state matrix (n x n). Must have all eigenvalues with magnitude < 1.
+        B: The input matrix (n x m).
+        tol: The tolerance for convergence. The algorithm stops when the norm
+             of A_k is less than this value.
+        max_iter: The maximum number of iterations.
+
+    Returns:
+        The controllability Gramian Wc.
+    """
+    Q = B @ B.T
+
+    # Initial state for the while loop
+    A_k = A
+    W_k = Q
+
+    # Use jax.lax.while_loop for an efficient, JIT-compilable loop
+    def condition(state):
+        A_k, _, i = state
+        # CORRECTED: Use jnp.linalg.norm instead of jax.scipy.linalg.norm
+        return (i < max_iter) & (jnp.linalg.norm(A_k, ord="fro") > tol)
+
+    def body(state):
+        A_k_prev, W_k_prev, i_prev = state
+
+        # Doubling step for W_k
+        W_k_new = W_k_prev + A_k_prev @ W_k_prev @ A_k_prev.T
+
+        # Doubling step for A_k
+        A_k_new = A_k_prev @ A_k_prev
+
+        return (A_k_new, W_k_new, i_prev + 1)
+
+    _, Wc, _ = jax.lax.while_loop(condition, body, (A_k, W_k, 0))
+
+    return Wc
 
 
 class TrackingTaskEnv(LQGEnv):
